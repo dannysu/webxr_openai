@@ -3,8 +3,11 @@ import { VRButton } from 'three/examples/jsm/webxr/VRButton';
 import { BoxLineGeometry } from 'three/addons/geometries/BoxLineGeometry.js';
 import { Configuration, OpenAIApi } from 'openai';
 
+window.THREE = THREE;
+
+const apiKey = window.location.hash.substring(1);
 const configuration = new Configuration({
-  apiKey: '',
+  apiKey: apiKey,
 });
 delete configuration.baseOptions.headers['User-Agent'];
 const openai = new OpenAIApi(configuration);
