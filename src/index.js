@@ -15,6 +15,7 @@ const openai = new OpenAIApi(configuration);
 const textinput = document.getElementById('openai_prompt');
 
 let camera, scene, renderer;
+let viewerTransform;
 
 let controller1, controller2;
 
@@ -90,6 +91,7 @@ function getFunctionCode(code, name) {
     return null;
 }
 
+let renderFuncCodeGood = true;
 async function processPrompt(prompt) {
     userPrompts.push(prompt);
     try {
@@ -121,9 +123,16 @@ async function processPrompt(prompt) {
                 if (evalResult) {
                     evalResult = eval(renderFuncCode);
                     if (evalResult) {
+                        renderFuncCodeGood = true;
                         console.log('remove all objects and re-init');
                         scene.remove.apply(scene, scene.children);
-                        window.initByOpenAI();
+                        try {
+                            window.initByOpenAI();
+                        } catch(e) {
+                            renderFuncCodeGood = false;
+                            console.log(e);
+                        }
+                        scene.add(viewerTransform);
                     }
                 }
         }
@@ -140,8 +149,13 @@ function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x505050);
 
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 10);
-    camera.position.set(0, 1.6, 3);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 10);
+
+    viewerTransform = new THREE.Group();
+    viewerTransform.add(camera);
+    scene.add(viewerTransform);
+    viewerTransform.position.set(0, 0, 10);
 
     //
 
@@ -150,6 +164,7 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.xr.enabled = true;
+    renderer.xr.setReferenceSpaceType('local');
     document.body.appendChild(renderer.domElement);
 
     //
@@ -200,10 +215,11 @@ function render(time) {
         }
     }
 
-    if (window.renderByOpenAI) {
+    if (window.renderByOpenAI && renderFuncCodeGood) {
         try {
             window.renderByOpenAI(time);
         } catch(e) {
+            renderFuncCodeGood = false;
             console.log(e);
         }
     }
