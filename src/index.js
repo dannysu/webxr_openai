@@ -3,6 +3,12 @@ import { VRButton } from 'three/examples/jsm/webxr/VRButton';
 import { BoxLineGeometry } from 'three/addons/geometries/BoxLineGeometry.js';
 import { Configuration, OpenAIApi } from 'openai';
 
+const THUMBSTICK_X_AXIS = 2;
+const THUMBSTICK_Y_AXIS = 3;
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
+
 window.THREE = THREE;
 
 const apiKey = window.location.hash.substring(1);
@@ -17,7 +23,10 @@ const textinput = document.getElementById('openai_prompt');
 let camera, scene, renderer;
 let viewerTransform;
 
+const clock = new THREE.Clock();
+
 let controller1, controller2;
+let leftGamepad, rightGamepad;
 
 init();
 animate();
@@ -182,8 +191,22 @@ function init() {
     }
     controller1 = renderer.xr.getController(0);
     controller1.addEventListener('selectend', onSelect);
+    controller1.addEventListener('connected', function(event) {
+        if (event.data.handedness === 'right') {
+            rightGamepad = event.data.gamepad;
+        } else {
+            leftGamepad = event.data.gamepad;
+        }
+    });
     controller2 = renderer.xr.getController(1);
     controller2.addEventListener('selectend', onSelect);
+    controller2.addEventListener('connected', function(event) {
+        if (event.data.handedness === 'right') {
+            rightGamepad = event.data.gamepad;
+        } else {
+            leftGamepad = event.data.gamepad;
+        }
+    });
 
     //
 
@@ -207,11 +230,55 @@ function animate() {
     renderer.setAnimationLoop(render);
 }
 
+function moveLeftRight(xDelta, deltaTime) {
+    const speed = 1;
+    viewerTransform.translateOnAxis(X_AXIS, xDelta * speed * deltaTime);
+}
+
+function moveForwardBack(yDelta, deltaTime) {
+    const speed = 1;
+    viewerTransform.translateOnAxis(Z_AXIS, yDelta * speed * deltaTime);
+}
+
+function rotateLeftRight(xDelta, deltaTime) {
+    const speed = 20;
+    viewerTransform.rotateOnAxis(Y_AXIS, xDelta * speed * deltaTime * Math.PI / 180);
+}
+
+function moveUpDown(yDelta, deltaTime) {
+    const speed = 1;
+    viewerTransform.translateOnAxis(Y_AXIS, yDelta * speed * deltaTime);
+}
+
 function render(time) {
     if (document.activeElement.tagName !== 'INPUT') {
         if (userPrompt) {
             processPrompt(userPrompt);
             userPrompt = null;
+        }
+    }
+
+    if (renderer.xr.isPresenting) {
+        const deltaTime = clock.getDelta();
+        if (leftGamepad) {
+            if (leftGamepad.axes[THUMBSTICK_X_AXIS] !== 0) {
+                const xDelta = leftGamepad.axes[THUMBSTICK_X_AXIS];
+                moveLeftRight(xDelta, deltaTime);
+            }
+            if (leftGamepad.axes[THUMBSTICK_Y_AXIS] !== 0) {
+                const yDelta = leftGamepad.axes[THUMBSTICK_Y_AXIS];
+                moveForwardBack(yDelta, deltaTime);
+            }
+        }
+        if (rightGamepad) {
+            if (rightGamepad.axes[THUMBSTICK_X_AXIS] !== 0) {
+                const xDelta = rightGamepad.axes[THUMBSTICK_X_AXIS];
+                rotateLeftRight(-xDelta, deltaTime);
+            }
+            if (rightGamepad.axes[THUMBSTICK_Y_AXIS] !== 0) {
+                const yDelta = rightGamepad.axes[THUMBSTICK_Y_AXIS];
+                moveUpDown(-yDelta, deltaTime);
+            }
         }
     }
 
