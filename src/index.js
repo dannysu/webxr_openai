@@ -21,10 +21,10 @@ animate();
 function init() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x505050);
-    
+
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 10);
     camera.position.set(0, 1.6, 3);
-    
+
     room = new THREE.LineSegments(
         new BoxLineGeometry(6, 6, 6, 10, 10, 10),
         new THREE.LineBasicMaterial({ color: 0x808080 })
@@ -48,7 +48,7 @@ function init() {
     //
 
     window.addEventListener('resize', onWindowResize);
-    
+
     //
 
     let functionCount = 0;
@@ -65,7 +65,7 @@ function init() {
         eval(`
             const ${objName} = func${functionCount}();
             scene.add(${objName});
-            
+
             // Put the object at a random place
 
             ${objName}.position.set(1, 1, 1);
@@ -85,8 +85,5 @@ function animate() {
 }
 
 function render() {
-    if (renderer.xr.isPresenting && !printed) {
-        textinput.focus();
-    }
     renderer.render(scene, camera);
 }
